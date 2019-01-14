@@ -17,6 +17,7 @@ package stern
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"hash/fnv"
 	"os"
@@ -124,6 +125,16 @@ func (t *Tail) Start(ctx context.Context, i v1.PodInterface) {
 			}
 
 			str := string(line)
+
+			var f interface{}
+			err = json.Unmarshal([]byte(line), &f)
+			if err != nil {
+				fmt.Println(errors.Wrapf(err, "Error unmarshalling json line \n",
+					t.ContainerName))
+			}
+
+			var m = f.(map[string]interface{})
+			str = m["message"].(string) + "\n"
 
 			for _, rex := range t.Options.Exclude {
 				if rex.MatchString(str) {
