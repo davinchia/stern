@@ -127,14 +127,17 @@ func (t *Tail) Start(ctx context.Context, i v1.PodInterface) {
 			str := string(line)
 
 			var f interface{}
-			err = json.Unmarshal([]byte(line), &f)
-			if err != nil {
-				fmt.Println(errors.Wrapf(err, "Error unmarshalling json line \n",
-					t.ContainerName))
-			}
 
-			var m = f.(map[string]interface{})
-			str = m["message"].(string) + "\n"
+			if isJSON(str) {
+				err = json.Unmarshal([]byte(line), &f)
+				if err != nil {
+					fmt.Println(err, "Error unmarshalling json line \n",
+						t.ContainerName)
+				}
+
+				var m = f.(map[string]interface{})
+				str = m["message"].(string) + "\n"
+			}
 
 			for _, rex := range t.Options.Exclude {
 				if rex.MatchString(str) {
@@ -197,4 +200,10 @@ type Log struct {
 
 	PodColor       *color.Color `json:"-"`
 	ContainerColor *color.Color `json:"-"`
+}
+
+func isJSON(s string) bool {
+	var js map[string]interface{}
+	return json.Unmarshal([]byte(s), &js) == nil
+
 }
